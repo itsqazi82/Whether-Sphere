@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenWeather – Responsive Weather App</title>
+  <style>
+    :root{
+      --bg:#0b0f14;           /* deep night */
+      --card:#121826cc;       /* glass card */
+      --muted:#97a3b6;        /* muted text */
+      --text:#e9eef7;         /* main text */
+      --brand:#e7c66b;        /* VIP gold */
+      --brand-weak:#e7c66b22; /* faint gold */
+      --error:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,Arial,sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, #172133 10%, transparent 40%),
+                  radial-gradient(900px 600px at 120% 10%, #1a2740 10%, transparent 40%),
+                  var(--bg);
+      color:var(--text);
+      display:flex;align-items:center;justify-content:center;
+      padding:24px;
+    }
+    .app{
+      width:100%;
+      max-width:900px;
+      display:grid;
+      gap:16px;
+    }
+    .brand{
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      letter-spacing:0.5px;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:12px;
+      display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--brand),#f4e6b0);
+      color:#151922;
+      font-weight:800;
+      box-shadow:0 8px 24px var(--brand-weak);
+    }
+    .brand h1{margin:0;font-size:clamp(18px,3.8vw,28px)}
+    .card{
+      background:linear-gradient( to bottom right, rgba(18,24,38,.75), rgba(18,24,38,.55));
+      border:1px solid #1e2838;
+      border-radius:20px;
+      box-shadow:0 10px 40px #0006, inset 0 1px 0 #ffffff0e;
+      backdrop-filter: blur(8px);
+    }
+    .controls{display:grid;gap:12px;padding:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row>*{flex:1 1 160px}
+    .input, select, button{
+      width:100%;padding:12px 14px;border-radius:14px;border:1px solid #2a3446;
+      background:#0f1522;color:var(--text);outline:none;
+    }
+    .input::placeholder{color:#8a95a8}
+    .btn{cursor:pointer;border:1px solid #344057;transition:.18s;
+      background:linear-gradient(135deg,#141c2c,#0f1522);
+    }
+    .btn:hover{transform:translateY(-1px);border-color:#495a78}
+    .btn.brand{background:linear-gradient(135deg,var(--brand),#f4e6b0);color:#121826;border:none}
+    .btn.brand:hover{filter:saturate(1.05);}
+    .muted{color:var(--muted)}
+
+    .main{display:grid;gap:16px;padding:16px}
+    .current{display:grid;grid-template-columns: 1fr;gap:16px}
+
+    .current .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .city{font-size:clamp(18px,3.5vw,26px);font-weight:700}
+    .temp-wrap{display:flex;align-items:center;gap:12px}
+    .temp{font-size:clamp(32px,7vw,56px);font-weight:800}
+    .feels{font-size:14px;color:var(--muted)}
+    .icon{width:72px;height:72px}
+
+    .grid{display:grid;grid-template-columns: repeat(2,1fr);gap:12px}
+    .metric{padding:12px;border-radius:14px;border:1px dashed #2a3446;display:flex;align-items:center;justify-content:space-between}
+    .metric span:first-child{color:var(--muted)}
+
+    .forecast{padding:16px}
+    .forecast h3{margin:0 0 8px 0;font-size:18px}
+    .days{display:grid;grid-template-columns: repeat(2,1fr);gap:10px}
+    .day{padding:12px;border:1px solid #273146;border-radius:14px;display:flex;align-items:center;justify-content:space-between}
+    .d-left{display:flex;align-items:center;gap:10px}
+    .d-meta{display:grid}
+    .d-date{font-weight:600}
+    .d-desc{font-size:12px;color:var(--muted)}
+    .d-temp{font-weight:700}
+
+    .footer{padding:12px 16px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+    .error{color:var(--error);padding:8px 12px;border:1px solid #ff6b6b33;border-radius:12px;background:#340f1433}
+
+    /* Responsive tweaks */
+    @media(min-width:720px){
+      .main{grid-template-columns: 1.2fr .8fr}
+      .current{grid-column:1/2}
+      .forecast{grid-column:2/3}
+      .days{grid-template-columns: 1fr}
+      .grid{grid-template-columns: repeat(3,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="brand">
+      <div class="logo">TG</div>
+      <h1>OpenWeather – Mobile‑Responsive App</h1>
+    </div>
+
+    <!-- Controls Card -->
+    <div class="card controls">
+      <div class="row">
+        <input id="city" class="input" type="text" placeholder="Search city e.g. Lahore" />
+        <select id="units" aria-label="Units">
+          <option value="metric">°C – Metric</option>
+          <option value="imperial">°F – Imperial</option>
+        </select>
+      </div>
+      <div class="row">
+        <button id="searchBtn" class="btn brand">Search Weather</button>
+        <button id="geoBtn" class="btn" title="Use your current location">Use Current Location</button>
+      </div>
+      <div id="msg" class="muted"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="card main">
+      <section class="current">
+        <div class="top">
+          <div>
+            <div class="city" id="cityName">—</div>
+            <div class="feels" id="updated">Ready when you are ✨</div>
+          </div>
+          <div class="temp-wrap">
+            <img id="icon" class="icon" alt="Weather icon" src="" />
+            <div class="temp" id="temp">--°</div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="metric"><span>Feels like</span><strong id="feels">—</strong></div>
+          <div class="metric"><span>Humidity</span><strong id="humidity">—</strong></div>
+          <div class="metric"><span>Wind</span><strong id="wind">—</strong></div>
+          <div class="metric"><span>Pressure</span><strong id="pressure">—</strong></div>
+          <div class="metric"><span>Visibility</span><strong id="visibility">—</strong></div>
+          <div class="metric"><span>Condition</span><strong id="desc">—</strong></div>
+        </div>
+      </section>
+
+      <section class="forecast">
+        <h3>5‑Day Forecast</h3>
+        <div id="days" class="days"></div>
+      </section>
+    </div>
+
+    <div class="footer">
+      <span>Built with <span aria-hidden>⚡</span> OpenWeatherMap</span>
+      <span class="muted">Tip: Add your API key inside the code (API_KEY)</span>
+    </div>
+  </div>
+
+  <script>
+    // =============================
+    // 1) CONFIG – put your API key
+    // =============================
+    const API_KEY = "c598affead0d452c5620cd13fdbf067c"; // <-- paste your key here
+
+    const el = (id)=>document.getElementById(id);
+    const cityInput = el('city');
+    const unitsSel = el('units');
+    const searchBtn = el('searchBtn');
+    const geoBtn = el('geoBtn');
+    const msg = el('msg');
+
+    const cityName = el('cityName');
+    const updated = el('updated');
+    const iconImg = el('icon');
+    const temp = el('temp');
+    const feels = el('feels');
+    const humidity = el('humidity');
+    const wind = el('wind');
+    const pressure = el('pressure');
+    const visibility = el('visibility');
+    const desc = el('desc');
+    const daysWrap = el('days');
+
+    // Helpers
+    const fmt = (n, suffix="") => (n === undefined || n === null) ? '—' : `${Math.round(n)}${suffix}`;
+    const formatDate = (ts) => new Date(ts*1000).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+
+    function setMessage(text, type="info"){
+      if(!text){ msg.textContent = ""; msg.className = "muted"; return; }
+      msg.textContent = text;
+      msg.className = type === 'error' ? 'error' : 'muted';
+    }
+
+    async function fetchJSON(url){
+      const res = await fetch(url);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    async function loadByCity(name){
+      const units = unitsSel.value;
+      if(!API_KEY || API_KEY === 'YOUR_OPENWEATHERMAP_API_KEY'){
+        setMessage('Add your OpenWeatherMap API key inside the code (API_KEY).', 'error');
+        return;
+      }
+      try{
+        setMessage('Loading…');
+        const q = encodeURIComponent(name.trim());
+        const urlNow = `https://api.openweathermap.org/data/2.5/weather?q=${q}&appid=${API_KEY}&units=${units}`;
+        const urlFc  = `https://api.openweathermap.org/data/2.5/forecast?q=${q}&appid=${API_KEY}&units=${units}`;
+        const [now, fc] = await Promise.all([fetchJSON(urlNow), fetchJSON(urlFc)]);
+        renderCurrent(now, units);
+        renderForecast(fc);
+        setMessage('');
+      }catch(err){
+        console.error(err);
+        setMessage('Could not load weather. Check city name or try again.', 'error');
+      }
+    }
+
+    async function loadByGeo(){
+      const units = unitsSel.value;
+      if(!navigator.geolocation){ setMessage('Geolocation not supported.', 'error'); return; }
+      if(!API_KEY || API_KEY === 'YOUR_OPENWEATHERMAP_API_KEY'){
+        setMessage('Add your OpenWeatherMap API key inside the code (API_KEY).', 'error');
+        return;
+      }
+      setMessage('Getting your location…');
+      navigator.geolocation.getCurrentPosition(async (pos)=>{
+        try{
+          const { latitude:lat, longitude:lon } = pos.coords;
+          const urlNow = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=${units}`;
+          const urlFc  = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=${units}`;
+          const [now, fc] = await Promise.all([fetchJSON(urlNow), fetchJSON(urlFc)]);
+          renderCurrent(now, units);
+          renderForecast(fc);
+          setMessage('');
+        }catch(e){
+          console.error(e);
+          setMessage('Could not load weather for your location.', 'error');
+        }
+      }, (err)=>{
+        setMessage('Location permission denied.', 'error');
+      }, { enableHighAccuracy:true, timeout:10000, maximumAge:0 });
+    }
+
+    function renderCurrent(now, units){
+      const { name, sys, weather, main, wind: w, visibility: vis, dt } = now;
+      cityName.textContent = `${name ?? '—'}, ${sys?.country ?? ''}`.trim();
+      updated.textContent = `Updated: ${formatDate(dt)}`;
+
+      const ico = weather?.[0]?.icon; // e.g. 10d
+      const descText = weather?.[0]?.description ?? '—';
+      iconImg.src = ico ? `https://openweathermap.org/img/wn/${ico}@2x.png` : '';
+      iconImg.alt = descText;
+
+      temp.textContent = fmt(main?.temp, units === 'metric' ? '°C' : '°F');
+      feels.textContent = fmt(main?.feels_like, units === 'metric' ? '°C' : '°F');
+      humidity.textContent = fmt(main?.humidity, '%');
+      wind.textContent = w?.speed != null ? `${Math.round(w.speed)} ${units === 'metric' ? 'm/s' : 'mph'}` : '—';
+      pressure.textContent = main?.pressure != null ? `${main.pressure} hPa` : '—';
+      visibility.textContent = vis != null ? `${Math.round(vis/1000)} km` : '—';
+      desc.textContent = descText;
+    }
+
+    function renderForecast(fc){
+      // pick entries around 12:00 each day for 5 days
+      const byDay = {};
+      for(const item of fc.list){
+        const date = new Date(item.dt*1000);
+        const hours = date.getHours();
+        const dayKey = date.toDateString();
+        const score = Math.abs(hours - 12); // closer to noon is better
+        if(!byDay[dayKey] || score < byDay[dayKey].score){
+          byDay[dayKey] = { score, item };
+        }
+      }
+      const days = Object.values(byDay).slice(0,5).map(v=>v.item);
+      daysWrap.innerHTML = '';
+      for(const d of days){
+        const date = new Date(d.dt*1000);
+        const icon = d.weather?.[0]?.icon;
+        const text = d.weather?.[0]?.main ?? '';
+        const hi = Math.round(d.main?.temp_max ?? d.main?.temp ?? 0);
+        const lo = Math.round(d.main?.temp_min ?? d.main?.temp ?? 0);
+        const el = document.createElement('div');
+        el.className = 'day';
+        el.innerHTML = `
+          <div class="d-left">
+            <img class="icon" width="56" height="56" src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${text}" />
+            <div class="d-meta">
+              <span class="d-date">${date.toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' })}</span>
+              <span class="d-desc">${text}</span>
+            </div>
+          </div>
+          <div class="d-temp">${hi}° / ${lo}°</div>
+        `;
+        daysWrap.appendChild(el);
+      }
+      if(days.length === 0){
+        daysWrap.innerHTML = '<div class="muted">No forecast data.</div>';
+      }
+    }
+
+    // Events
+    searchBtn.addEventListener('click', ()=>{
+      const c = cityInput.value.trim();
+      if(!c){ setMessage('Type a city name to search.'); return; }
+      loadByCity(c);
+    });
+    cityInput.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter') searchBtn.click();
+    });
+    geoBtn.addEventListener('click', loadByGeo);
+
+    // Try a default city for first load (optional)
+    cityInput.value = 'Lahore';
+    // Comment next line if you don't want auto-load
+    // loadByCity(cityInput.value);
+  </script>
+</body>
+</html>
